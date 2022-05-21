@@ -1,0 +1,312 @@
+---
+title: "`dplyr` y Pokemon"
+author: "Nayeli Luis"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+  sansfont: Helvetica
+---
+
+**email**: <nayeli.luis@ciencias.unam.mx>
+
+## [`dplyr`](https://dplyr.tidyverse.org/)
+
+Es una librería para la manipulación de datos. 
+
+## Pasos iniciales 
+
+* Llamar a la libreria
+
+```{r}
+# Instalar si es el caso 
+# install.packages("tidyverse")
+
+library(tidyverse)
+```
+
+
+* Importar datos. El dataset fue descargado de [Kaggle](https://www.kaggle.com/datasets/rounakbanik/pokemon?resource=download). 
+
+```{r}
+pokemon <- read_csv("../00_datasets/pokemon.csv")
+```
+
+```{r}
+pokemon
+```
+
+Tipo de obejeto que es `pokemon`:
+
+```{r}
+class(pokemon)
+```
+
+Conocer las primeras filas: 
+**Nota**: Esto no es necesario cuando trabajamos con tibbles porque por default te arroja las primeras líneas del dataframe.
+
+```{r}
+head(pokemon)
+```
+
+Conocer las dimensiones: 
+
+```{r}
+dim(pokemon)
+```
+
+Conocer los nombres de las columnas
+```{r}
+colnames(pokemon)
+```
+
+La columna `abilities` es un lista (en sintaxis de Python) de lashabilidades que el Pokemon es capaz de tener. 
+
+Explorar una columna en específico
+```{r}
+# pokemon$type1
+```
+
+Explorar solo algunos elementos: 
+
+```{r}
+head(pokemon$type1, 30)
+```
+
+Otra columna: 
+
+```{r}
+head(pokemon$classfication, 20)
+```
+
+## Manejo de datos
+
+En general, cuando tenemos un dataframe muy largo, no utilizamos todos los datos. Nos concentramos en algunas variables y en algunas observaciones. De manera que generamos *suconjuntos* de datos del dataset original.
+
+Para esto tenemos dos opciones: 
+
+1. Seleccionar columnas 
+2. Filtrar por filas. 
+
+## `select()`
+Permite seleccionar variables en un dataframe usando un lenguaje conciso e intuitivo. Dicha selección se puede hacer mediante los nombres de las columnas o el tipo de dato que contienen.
+
+Seleccion por nombres de columnas
+
+```{r}
+# Crear un vector con las columnas seleccionadas
+columnas <- c('abilities', 'name', 'type1', 'classfication', 'is_legendary')
+# select()
+select(pokemon, all_of(columnas))
+```
+
+Seleccionar por un rango de columnas
+
+```{r}
+select(pokemon, 10:15)
+```
+
+Si se coloca un el rango menor al final, hace una selección de manera invertida
+
+```{r}
+select(pokemon, 20:1)
+```
+
+`select()` a la antigua: 
+
+```{r}
+pokemon[1:10,columnas]
+```
+
+Seleccionar utilizando un patrón de caracteres: 
+
+```{r}
+# Opción 1
+select(pokemon, contains("against"))
+```
+
+```{r}
+# Opcion 2
+select(pokemon, matches("against"))
+```
+
+Por tipo de dato: 
+
+```{r}
+select(pokemon, where(is.numeric))
+```
+
+## `filter()` 
+
+Función que se utiliza para generar subconjuntos de datos, reteniendo las **filas** que cumplen una condición. Para hacer el filtrado, se evalúa una expresión que deber ser `TRUE` para generar las filas. Cuando existen `NA`s se eliminan. 
+
+Para generar la condición se utilizan operadores relacionales y lógicos. 
+
+### Operadores relacionales
+- >, <: mayor que y menor que
+- >= mayor o igual que 
+- <= menor o igual que
+- != diferente de
+- == igual a
+
+### Operadores lógicos o booleanos
+**AND (`&`)**
+TRUE and TRUE -> TRUE
+TRUE and FALSE -> FALSE
+FALSE and FALSE -> FALSE
+
+**OR (`|`)**
+TRUE or TRUE -> TRUE
+TRUE or FALSE -> TRUE
+FALSE or FALSE -> FALSE
+
+**NOT (`!`)**
+
+En `R` se puede utilizar la ley de Morgan 
+
+`!(x&y) = (!x) | (!y)` : Negar `x` y `y` es igual que negar `x`o `y`.
+`!(x|y) = (!x) & (!y)`: Negar `x`o `y`es igual que negar `x` y `y`. 
+
+Del dataset de `pokemon` filtrar todos los pokemones que sean de fuego: 
+
+```{r}
+filter(pokemon, type1 == "fire")
+```
+
+Ahora, todos los pokemones que no sean de fuego: 
+
+```{r}
+filter(pokemon, type1 != "fire")
+```
+
+¿Cuántas categorías hay en la columna `type1`?
+```{r}
+dplyr::count(pokemon, type1)
+```
+
+Existen 18 categorías, o sea, 18 tipos de pokemones. Hacer un subconjunto de datos que elija solo a los de roca, agua, pasto y fuego. 
+
+¿Usamos AND u OR?
+
+```{r}
+# and
+filter(pokemon, type1 == "rock" & type1 == "water" & type1 == "grass" & type1 == "fire")
+```
+
+```{r}
+# or
+filter(pokemon, type1 == "rock" | type1 == "water" | type1 == "grass" | type1 == "fire")
+```
+
+Para no hacer la expresión tan larga, podemos utilizar un operador de pertenecia: 
+
+```{r}
+tipos_pokemones <- c("rock", "water", "grass", "fire")
+filter(pokemon, type1 %in% tipos_pokemones)
+```
+
+### Filtrar una variable numérica
+Conocer el valor mínimo y máximo de una variable numérica. 
+
+```{r}
+summary(pokemon$weight_kg)
+```
+
+Ahora...¿Usamos OR o AND?
+
+```{r}
+# or
+filter(pokemon, weight_kg >= 100 | weight_kg <= 300 )
+```
+
+```{r}
+# and
+filter(pokemon, weight_kg >= 100 & weight_kg <= 300 )
+```
+
+Se puede utilizar `between()` para los rangos: 
+
+```{r}
+filter(pokemon, between(weight_kg, 100, 300)) 
+```
+
+## Ejercicio: 
+
+Hacer un subconjunto de datos de las columnas: nombre, tipo1, clasificación, habilidades, peso y si es legendario de los pokemones de agua, fuego, hielo y electricos. 
+
+### Solución
+
+Ver de nuevo los nombres de las columnas: 
+```{r}
+colnames(pokemon)
+```
+
+Ver de nuevo los tipos: 
+
+```{r}
+table(pokemon$type1)
+# Conocer la proporción
+# prop.table(table(pokemon$type1))
+```
+
+Entonces: 
+```{r}
+columnas2 <- c("name", 'type1','classfication','abilities', 'weight_kg', 'is_legendary')
+tipos <- c('water', 'ice', 'fire', 'electric')
+pokemon2 <- pokemon %>%
+    select(all_of(columnas2)) %>%
+    filter(type1 %in% tipos)
+
+pokemon2
+```
+
+## `arrange()`
+Permite ordenar el dataframe en funcion de los valores que hay en una columna. De manera predeterminada lo hacer de menor a mayor. 
+
+```{r}
+# Ordena los nombres de los pokemones en orden alfabético
+arrange(pokemon2, name)
+```
+
+```{r}
+# Ordenar los nombres en orden alfábetico pero el peso de mayor a menor 
+arrange(pokemon2, name, desc(weight_kg))
+```
+
+## `mutate()`
+Agrega nuevas  variables y preserva las existentes. 
+
+Sumar el total de las variables `against`
+
+```{r}
+# Opcion 1
+pokemon %>% 
+  select(name, contains("against")) %>% 
+  mutate(total = rowSums(select(., -name))) %>% 
+  select(name, total)
+```
+```{r}
+# opcion2
+pokemon %>% 
+  select(name, contains("against")) %>% 
+  mutate(total = reduce(select(., -name), `+`))
+```
+
+## `group_by()` y `summarise()`
+
+Funciones que nos permiten conocer alguna medida de estadística descriptiva, a partir de las categorías de un grupo.
+
+Ejemplo: ¿Cuál es la media del peso de los pokemones en función del tipo de pokemon? 
+
+```{r}
+pokemon2 %>% 
+    group_by(type1) %>%
+    summarise(across(weight_kg, .fns = list(media = mean)))
+```
+
+Indica que hay NAs en nuetrso dataframe. 
+
+```{r}
+pokemon2 %>% 
+    group_by(type1) %>%
+    summarise(across(weight_kg, .fns = list(media = mean), na.rm = T))
+```
